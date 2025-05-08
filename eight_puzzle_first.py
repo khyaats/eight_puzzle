@@ -49,7 +49,138 @@ def get_puzzle_state():
         puzzle_state.append(row)
     return puzzle_state
 
+# This function which checks whether the state is goal or not
+def goal_test(puzzle_state):
+    for i in range(GRID_SIDE_LENGTH):
+        for j in range(GRID_SIDE_LENGTH):
 
+            # Blank tile represented by zero should be at the last
+            if i == GRID_SIDE_LENGTH - 1 and j == GRID_SIDE_LENGTH - 1:
+                if puzzle_state[i][j] != 0:
+                    return False
+            
+            # Other numbers should be present at the rest of the place
+            else:
+                if puzzle_state[i][j] != GRID_SIDE_LENGTH * i + j + 1:
+                    return False
+    return True
+
+def expand_nodes(puzzle_state):
+    # the variable is used to keep track of the increment and decrement of the row and column index
+    directions = [  [0, 1],
+                    [0, -1],
+                    [1, 0],
+                    [-1, 0]
+                    ]
+    
+    for i in range(GRID_SIDE_LENGTH):
+        for j in range(GRID_SIDE_LENGTH):
+            if puzzle_state[i][j] == 0:
+                empty_space_in_x = i
+                empty_space_in_y = j
+    
+    all_expanded_nodes = []
+    for dir_x, dir_y in directions:
+        x = empty_space_in_x + dir_x
+        y = empty_space_in_y + dir_y
+        if 0 <= x < GRID_SIDE_LENGTH and 0 <= y < GRID_SIDE_LENGTH:
+            # For each move, deep copy the state and exchange blank with the corresponding tile
+            node = copy.deepcopy(puzzle_state)
+            node[empty_space_in_x][empty_space_in_y], node[x][y] = node[x][y], node[empty_space_in_x][empty_space_in_y]
+            all_expanded_nodes.append(node)
+    return all_expanded_nodes
+
+# This function converts a state to tuple so that we can easily check if it is visited or not
+def node_to_tuple(node):
+    arr = []
+    for row in node:
+        # All the numbers are added in the order and converted to a tuple
+        arr.extend(row)
+    return tuple(arr)
+
+def compute_heuristic_search(node, algorithm):
+      
+    # Manhattan Heuristic
+    if algorithm == 3:
+        h = 0
+        for i in range(GRID_SIDE_LENGTH):
+            for j in range(GRID_SIDE_LENGTH):
+                if node[i][j] != 0: # Not checking for the blank
+
+                    # Computing the position of the tile in the goal state
+                    goal_state_i = (node[i][j] - 1) // GRID_SIDE_LENGTH
+                    goal_state_j = (node[i][j] - 1) % GRID_SIDE_LENGTH
+
+                    # Incrementing the heuristic by the difference in indices
+                    h += abs(goal_state_i - i)
+                    h += abs(goal_state_j - j)
+        return h
+    
+    # Misplaced Heuristic
+    if algorithm == 2:
+        h = 0
+        for i in range(GRID_SIDE_LENGTH):
+            for j in range(GRID_SIDE_LENGTH):
+                if i != GRID_SIDE_LENGTH - 1 or j != GRID_SIDE_LENGTH - 1: # Not checking for the last position
+                    if node[i][j] != i * GRID_SIDE_LENGTH + j + 1: # If the position does not have the corresponding tile
+                        h += 1
+        return h
+    
+    else:
+        return 0
+
+# This function prints the intermediate nodes
+def print_intermediate_node(node):
+    for i in range(GRID_SIDE_LENGTH):
+        print("[", ", ".join(map(str, node[i])), "]")
+
+# This is the Main Search Function
+def main_search(inital_state, algorithm):
+    
+    all_nodes = [] # Empty queue is initialized
+    visited_nodes = set() # To track the visited nodes
+    nodes_expanded = 0 # To track the number of nodes expanded
+    max_queue_size = 0 # To track the maximum queue size
+    time_start = time.time() # Algorithm start time
+    h = compute_heuristic_search(inital_state, algorithm) # Compute heuristic for the initial state
+    heapq.heappush(all_nodes, (h, 0, inital_state)) # Push the initial state onto the queue
+    while len(all_nodes): # Until the queue is empty
+        max_queue_size = max(max_queue_size, len(all_nodes)) # Check the queue size
+        f, g, node = heapq.heappop(all_nodes) # Pop f(n), g(n) and the node having least f(n) from the queue
+        if goal_test(node): # Check if the node is goal node or not
+            # Print all the results
+            print("Success! Goal State Found!")
+            elapsed_time = time.time() - time_start
+            print("Solution Depth: {}".format(g))
+            print("Running Time: {0:.2f} ms".format(elapsed_time*1000))
+            print("Nodes Expanded: {}".format(nodes_expanded))
+            print("Max Queue Size: {}".format(max_queue_size))
+            return node
+        
+        node_tuple = node_to_tuple(node)
+        # Expand the node if it not visited
+        if node_tuple not in visited_nodes:
+            nodes_expanded += 1 # Increment the count tracking the number of nodes expanded
+            visited_nodes.add(node_tuple) # Add it to visited
+            # Print the current node. Comment the next 3 lines if you dont need lengthy intermediate nodes
+            print("The best state to expand with a g(n) = {} and h(n) = {} is ...".format(g, f-g))
+            print_intermediate_node(node)
+            print()
+
+            # Expand the nodes
+            all_expanded_nodes = expand_nodes(node)
+            for expanded_node in all_expanded_nodes:
+                if node_to_tuple(expanded_node) not in visited_nodes:
+                    h = compute_heuristic_search(expanded_node, algorithm) # Computing the heuristics
+                    heapq.heappush(all_nodes, (h + g + 1, g + 1, expanded_node)) # Pushing it to the queue
+    
+    # Print the results when the solution is not found
+    print("Failure!")
+    elapsed_time = time.time() - time_start
+    print("Running Time: {0:.2f} ms".format(elapsed_time*1000))
+    print("Nodes Expanded: {}".format(nodes_expanded))
+    print("Max Queue Size: {}".format(max_queue_size))
+        
 def main():
     try:
         puzzle_mode = input("Welcome to my {}-Puzzle Solver.\nType '1' to input your own puzzle, or '2' to select a default puzzle based on difficulty (0-7).\n".format(GRID_SIDE_LENGTH * GRID_SIDE_LENGTH - 1))
@@ -70,7 +201,7 @@ def main():
 
         if algo_choice not in ['1', '2', '3']:
             print("Invalid algorithm choice!")
-        return
+            return
 
         algo_choice = int(algo_choice)
         algo_names = {
