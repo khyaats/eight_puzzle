@@ -142,27 +142,29 @@ def main_search(inital_state, algorithm):
     nodes_expanded = 0 # To track the number of nodes expanded
     max_queue_size = 0 # To track the maximum queue size
     time_start = time.time() # Algorithm start time
-    h = compute_heuristic_search(inital_state, algorithm) # Compute heuristic for the initial state
+    h = compute_heuristic_search(inital_state, algorithm) # Heuristic is computed for the initial state
     heapq.heappush(all_nodes, (h, 0, inital_state)) # Push the initial state onto the queue
+    
     while len(all_nodes): # Until the queue is empty
         max_queue_size = max(max_queue_size, len(all_nodes)) # Check the queue size
         f, g, node = heapq.heappop(all_nodes) # Pop f(n), g(n) and the node having least f(n) from the queue
         if goal_test(node): # Check if the node is goal node or not
-            # Print all the results
-            print("Success! Goal State Found!")
+            # Results are printed in the below code
+            print("Congratulations! Goal State  is Found!")
             elapsed_time = time.time() - time_start
-            print("Solution Depth: {}".format(g))
-            print("Running Time: {0:.2f} ms".format(elapsed_time*1000))
+            print("The Solution Depth: {}".format(g))
+            print("The Running Time: {0:.2f} ms".format(elapsed_time*1000))
             print("Nodes Expanded: {}".format(nodes_expanded))
-            print("Max Queue Size: {}".format(max_queue_size))
+            print("Maximum Queue Size: {}".format(max_queue_size))
             return node
         
         node_tuple = node_to_tuple(node)
         # Expand the node if it not visited
         if node_tuple not in visited_nodes:
-            nodes_expanded += 1 # Increment the count tracking the number of nodes expanded
-            visited_nodes.add(node_tuple) # Add it to visited
-            # Print the current node. Comment the next 3 lines if you dont need lengthy intermediate nodes
+            nodes_expanded += 1 # Increase the count tracking the number of nodes expanded
+            visited_nodes.add(node_tuple) # Adding it to visited ones
+            # Print the current node. 
+            # Comment the next 3 lines if you dont need lengthy intermediate nodes
             print("The best state to expand with a g(n) = {} and h(n) = {} is ...".format(g, f-g))
             print_intermediate_node(node)
             print()
